@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "messaging-notification-push-service.fullname" . }}
+  labels:
+{{ include "messaging-notification-push-service.labels" . | indent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: 'messaging-notification-push-service-port'
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.service.port }}
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: {{ include "messaging-notification-push-service.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}

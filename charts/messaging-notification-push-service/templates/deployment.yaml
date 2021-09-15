@@ -1,0 +1,142 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "messaging-notification-push-service.fullname" . }}
+  labels:
+{{ include "messaging-notification-push-service.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "messaging-notification-push-service.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  strategy:
+    type: {{ .Values.strategy.type }}
+    rollingUpdate:
+      maxSurge: {{ .Values.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.strategy.rollingUpdate.maxUnavailable }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ print $.Template.BasePath "/configmap.yaml" . | sha256sum }}
+      labels:
+        app.kubernetes.io/name: {{ include "messaging-notification-push-service.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PORT
+              valueFrom:
+                secretKeyRef:
+                  key: PORT
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: NODE_ENV
+              valueFrom:
+                secretKeyRef:
+                  key: NODE_ENV
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_HOST
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: POSTGRES_PORT
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_PORT
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: POSTGRES_DBNAME
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_DBNAME
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_USER
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_PASSWORD
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: POSTGRES_TEST_HOST
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_TEST_HOST
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: POSTGRES_TEST_PORT
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_TEST_PORT
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: POSTGRES_TEST_DBNAME
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_TEST_DBNAME
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: POSTGRES_TEST_USER
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_TEST_USER
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: POSTGRES_TEST_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: POSTGRES_TEST_PASSWORD
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: SENDGRID_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: SENDGRID_API_KEY
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: TERMII_BASE_API
+              valueFrom:
+                secretKeyRef:
+                  key: TERMII_BASE_API
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: TERMII_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  key: TERMII_API_KEY
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+            - name: TERMII_MAX_SMS_USER_ID
+              valueFrom:
+                secretKeyRef:
+                  key: TERMII_MAX_SMS_USER_ID
+                  name: {{ .Values.valueFrom.secretKeyRef.name }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.service.port }}
+              scheme: HTTP
+            initialDelaySeconds: 120 # how long to wait before checking
+            periodSeconds: 20 # how long to wait between checks
+            successThreshold: 2 # how many successes to hit before accepting
+            failureThreshold: 3 # how many failures to accept before failing
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
